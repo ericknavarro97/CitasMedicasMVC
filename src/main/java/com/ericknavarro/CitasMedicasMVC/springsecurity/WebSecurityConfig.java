@@ -5,6 +5,8 @@
  */
 package com.ericknavarro.CitasMedicasMVC.springsecurity;
 
+import com.ericknavarro.CitasMedicasMVC.dao.UserRepository;
+import com.ericknavarro.CitasMedicasMVC.service.impl.UserDetailsServiceImpl;
 import javax.sql.DataSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -16,6 +18,8 @@ import org.springframework.security.config.annotation.web.configuration.WebSecur
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 
 
@@ -26,15 +30,11 @@ import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 @Configuration
 @EnableWebSecurity
 public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
-
+    
     @Autowired
-    DataSource dataSource;
-
-	//Enable jdbc authentication
-    /*@Autowired
-    public void configAuthentication(AuthenticationManagerBuilder auth) throws Exception {
-        auth.jdbcAuthentication().dataSource(dataSource);
-    }*/
+    UserDetailsServiceImpl userDetailsService;
+    
+    UserRepository repo;
     
     @Override
     protected void configure(HttpSecurity http) throws Exception {
@@ -45,24 +45,41 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
             .formLogin()
                 .loginPage("/login")
                 .permitAll()
+                .defaultSuccessUrl("/citas")
+                .failureUrl("/login?error")
+                .usernameParameter("username")
+                .passwordParameter("password")
                 .and()
             .logout()
-                .permitAll();
-        
-        http.csrf().disable();
+                .permitAll()
+                .invalidateHttpSession(true)
+                .clearAuthentication(true)
+                .logoutSuccessUrl("/login?logout");
     }
     
+    /*@Override
+    protected void configure(final AuthenticationManagerBuilder auth) throws Exception {
+        auth.
+        auth.inMemoryAuthentication()
+          .withUser("user1").password(passwordEncoder().encode("user1Pass")).roles("USER")
+          .and()
+          .withUser("user2").password(passwordEncoder().encode("user2Pass")).roles("USER")
+          .and()
+          .withUser("admin").password(passwordEncoder().encode("adminPass")).roles("ADMIN");
+    }*/
+    
     @Bean
-	@Override
-	public UserDetailsService userDetailsService() {
-		UserDetails user =
-			 User.withDefaultPasswordEncoder()
-				.username("user")
-				.password("password")
-				.roles("USER")
-				.build();
-
-		return new InMemoryUserDetailsManager(user);
-	}
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+    	
+    //Registra el service para usuarios y el encriptador de contrasena
+    @Autowired
+    public void configureGlobal(AuthenticationManagerBuilder auth) throws Exception { 
+ 
+        // Setting Service to find User in the database.
+        // And Setting PassswordEncoder
+        auth.userDetailsService(userDetailsService).passwordEncoder(passwordEncoder());     
+    }
     
 }

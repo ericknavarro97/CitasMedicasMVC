@@ -14,8 +14,12 @@ and open the template in the editor.
     <body>
 
       <div class="container">
-        <div class="">
-          <h1 th:text="${appName}"></h1>
+        <div class="justify-content">
+              <h1 th:text="${appName}"></h1>
+
+            <form class="form-group" th:action="@{/logout}" method="post">
+              <input class="btn btn-danger" type="submit" name="" value="Cerrar Sesion">
+            </form>
         </div>
         <div class="">
           <table class="table text-center">
